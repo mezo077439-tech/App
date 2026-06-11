@@ -1,27 +1,56 @@
-#!/usr/bin/env python3
-"""
-Script to extract New Folder.zip and commit contents to the repository
-"""
-import zipfile
-import os
+name: Extract ZIP and Commit
 
-def extract_zip():
-    zip_path = "New Folder.zip"
-    extract_dir = "extracted_content"
-    
-    # Create extraction directory if it doesn't exist
-    os.makedirs(extract_dir, exist_ok=True)
-    
-    # Extract the zip file
-    print(f"Extracting {zip_path}...")
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_dir)
-        print(f"Successfully extracted to {extract_dir}/")
-        return True
-    except Exception as e:
-        print(f"Error extracting zip: {e}")
-        return False
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-if __name__ == "__main__":
-    extract_zip()
+jobs:
+  extract-zip:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Extract ZIP file
+        run: |
+          python3 << 'EOF'
+          import zipfile
+          import os
+          
+          def extract_zip():
+              zip_path = "New Folder.zip"
+              extract_dir = "extracted_content"
+              
+              # Create extraction directory if it doesn't exist
+              os.makedirs(extract_dir, exist_ok=True)
+              
+              # Extract the zip file
+              print(f"Extracting {zip_path}...")
+              try:
+                  with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                      zip_ref.extractall(extract_dir)
+                  print(f"Successfully extracted to {extract_dir}/")
+                  return True
+              except Exception as e:
+                  print(f"Error extracting zip: {e}")
+                  return False
+          
+          if __name__ == "__main__":
+              extract_zip()
+          EOF
+
+      - name: Commit extracted content
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add extracted_content/
+          git commit -m "Extract ZIP content from New Folder.zip" || echo "No changes to commit"
+          git push
